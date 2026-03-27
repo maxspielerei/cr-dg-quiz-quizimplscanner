@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
+echo "=== Erstelle DG Quizimpl Scanner ==="
 
-echo "=== Erstelle Projektstruktur ==="
-
-mkdir -p app/src/main/java/com/dg/scanner
+mkdir -p app/src/main/assets
+mkdir -p app/src/main/java/com/dg/quizimpl
 mkdir -p app/src/main/res/layout
 mkdir -p app/src/main/res/values
 mkdir -p app/src/main/res/drawable
@@ -34,6 +34,7 @@ cat > gradle.properties << 'EOF'
 org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
 android.useAndroidX=true
 android.enableJetifier=true
+android.suppressUnsupportedCompileSdk=34
 EOF
 
 cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
@@ -47,25 +48,22 @@ EOF
 cat > gradlew << 'EOF'
 #!/usr/bin/env sh
 APP_HOME="$(cd "$(dirname "$0")"; pwd)"
-exec java -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" \
-  org.gradle.wrapper.GradleWrapperMain "$@"
+exec java -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain "$@"
 EOF
 chmod +x gradlew
 
 cat > app/build.gradle << 'EOF'
 plugins { id 'com.android.application' }
 android {
-    compileSdk 33
+    compileSdk 34
     defaultConfig {
         applicationId "com.dg.quizimpl"
         minSdk 21
-        targetSdk 29
+        targetSdk 34
         versionCode 1
         versionName "1.0"
     }
-    buildTypes {
-        release { minifyEnabled false }
-    }
+    buildTypes { release { minifyEnabled false } }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -88,10 +86,10 @@ EOF
 cat > app/src/main/AndroidManifest.xml << 'EOF'
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.dg.quizimpl">
 
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
@@ -100,12 +98,9 @@ cat > app/src/main/AndroidManifest.xml << 'EOF'
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
-        android:requestLegacyExternalStorage="true"
         android:theme="@style/Theme.DGQuizimpl">
 
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
+        <activity android:name=".MainActivity" android:exported="true"
             android:screenOrientation="fullSensor">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -113,16 +108,268 @@ cat > app/src/main/AndroidManifest.xml << 'EOF'
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".WebViewActivity"
-            android:exported="false"
+        <activity android:name=".WebViewActivity" android:exported="false"
             android:screenOrientation="fullSensor" />
 
     </application>
 </manifest>
 EOF
 
-cat > app/src/main/java/com/dg/scanner/MainActivity.java << 'EOF'
+cat > app/src/main/assets/dg-quizimpl.html << 'HTMLEOF'
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DG Quiz</title>
+    <style>
+        @keyframes bgShift {
+            0%   { background-color: #0a3d3d; }
+            50%  { background-color: #0d6060; }
+            100% { background-color: #0a3d3d; }
+        }
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #0a3d3d;
+            animation: bgShift 3s ease-in-out infinite;
+        }
+        .card {
+            text-align: center;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            width: 85%;
+            max-width: 450px;
+        }
+        button {
+            padding: 20px 40px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #e67e22;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            width: 100%;
+        }
+        button:active {
+            transform: scale(0.98);
+            background-color: #d35400;
+        }
+        .hidden { display: none; }
+        .fade-in { animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        h2 { color: #2c3e50; line-height: 1.5; }
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.5);
+            background-color: rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .back-link:hover {
+            color: rgba(255,255,255,0.8);
+            background-color: rgba(255,255,255,0.15);
+        }
+        .pw-label {
+            display: block;
+            color: #2c3e50;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+        }
+        #pw-input {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 1.1rem;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            box-sizing: border-box;
+            margin-bottom: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            text-align: center;
+            color: #2c3e50;
+        }
+        #pw-input:focus { border-color: #e67e22; }
+        #pw-error {
+            display: none;
+            color: #c0392b;
+            font-weight: bold;
+            font-size: 1rem;
+            background: #fde8e8;
+            border: 2px solid #e74c3c;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+        }
+        #start-screen h2 {
+            font-size: 1rem;
+            text-align: center;
+            line-height: 1.8;
+        }
+        .start-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #e67e22;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="#" id="back-link" class="back-link hidden" onclick="previousQuestion(); return false;">&#8592; zur&uuml;ck</a>
+
+    <div class="card">
+
+        <!-- PASSWORT -->
+        <div id="password-screen">
+            <h2 style="margin-top:0; text-align:center;">&#128274;</h2>
+            <label class="pw-label">Gib das Passwort <strong>in Kleinbuchstaben</strong> ein.</label>
+            <input type="text" id="pw-input" placeholder="Passwort"
+                autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
+            <div id="pw-error">Das war falsch!<br>Sucht in euren Kitteln nach Hinweisen.</div>
+            <button onclick="checkPassword()">Weiter</button>
+        </div>
+
+        <!-- START -->
+        <div id="start-screen" class="hidden">
+            <div class="start-title">Super gemacht!</div>
+            <h2>
+                Nun braucht ihr noch 2 Sachen:<br><br>
+                <strong>DEN R&Ouml;HREN-APPARAT</strong><br>
+                Der ist im gr&uuml;nen Schrank. Habt ihr ihn schon ge&ouml;ffnet?<br><br>
+                Au&szlig;erdem ben&ouml;tigt ihr die <strong>KUGELN</strong> in der roten Box.<br>
+                &Ouml;ffnet den Kabelbinder mit einer Zange!<br>
+                Und wo ist die Zange?<br>
+                Untersucht nochmal genau den silbernen Koffer&nbsp;&hellip;<br><br>
+                OK&nbsp;&hellip; bereit?<br><br>
+                Los geht&rsquo;s mit den Fragen:
+            </h2>
+            <br>
+            <button onclick="showQuestion()">Erste Frage</button>
+        </div>
+
+        <!-- FRAGEN -->
+        <div id="question-screen" class="hidden">
+            <h2 id="frage"></h2>
+            <br>
+            <button id="next-btn" onclick="nextQuestion()">N&auml;chste Frage</button>
+        </div>
+
+        <!-- ENDE -->
+        <div id="end-screen" class="hidden">
+            <h1 style="color:#27ae60; font-size:3rem; margin:0;">&#127881;</h1>
+            <h2 style="color:#27ae60;">Geschafft!</h2>
+        </div>
+
+    </div>
+
+    <script>
+        var validPasswords = [
+            'aquano','aquanoo','aquanooo','aquanoooo','aquanooooo',
+            'aquanoooooo','aquanooooooo','aquanoooooooo','aquanooooooooo','aquanoooooooooo'
+        ];
+
+        function checkPassword() {
+            var val = document.getElementById('pw-input').value.trim();
+            var err = document.getElementById('pw-error');
+            if (validPasswords.indexOf(val) !== -1) {
+                err.style.display = 'none';
+                document.getElementById('password-screen').style.display = 'none';
+                document.getElementById('start-screen').style.display = 'block';
+            } else {
+                err.style.display = 'block';
+            }
+        }
+
+        document.getElementById('pw-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') checkPassword();
+        });
+
+        var fragen = [
+            "Wenn <em>AquaMegaWorld</em> gebaut wird, sprengen wir ein paar Wohnh&auml;user.<br>Ist das OK?",
+            "Die Politiker haben entschieden, <em>AquaMegaWorld</em> zu bauen.<br>Was denkt ihr:<br>Sollen alle Berliner &uuml;ber <em>AquaMegaWorld</em> entscheiden?",
+            "D&uuml;rfen Menschen ohne Geld kostenlos zu <em>AquaMegaWorld</em>, wenn alle anderen ein bisschen mehr Eintritt zahlen?",
+            "Darf der Eintritt in <em>AquaMegaWorld</em> f&uuml;r Kinder h&ouml;her als 10&nbsp;&euro; sein?",
+            "Menschen mit viel Geld bekommen in <em>AquaMegaWorld</em> eine eigene Zone.<br>Andere Menschen d&uuml;rfen da nicht rein.<br>Ist das ok?",
+            "Der n&auml;chste &bdquo;Avengers&ldquo;-Film wird in <em>AquaMegaWorld</em> gemacht.<br>Daf&uuml;r ist <em>AquaMegaWorld</em> f&uuml;r alle Berliner 7 Tage zu.<br>Findest du das in Ordnung?",
+            "F&uuml;r <em>AquaMegaWorld</em> ist im Sommer wenig Wasser da.<br>Sollen alle Berliner zuhause Wasser sparen, damit <em>AquaMegaWorld</em> offen bleiben kann?",
+            "Darf der Chef von <em>AquaMegaWorld</em> alleine den Bauplan &auml;ndern?",
+            "Alle Berliner bezahlen den Bau von <em>AquaMegaWorld</em>. Der Bau und die Kosten f&uuml;r alle werden nun immer teurer.<br>Ist das ok f&uuml;r dich?",
+            "<em>AquaMegaWorld</em> will eigene Snacks verkaufen. Darum d&uuml;rft ihr kein eigenes Essen mitbringen.<br>Ist das OK f&uuml;r euch?",
+            "Bei <em>AquaMegaWorld</em> war eine S-Bahn-Station geplant.<br>Das wird nun zu teuer.<br>Deshalb soll ein Bus f&uuml;r 50 Cent dorthin fahren.<br>Ok f&uuml;r euch?",
+            "Sollen alle Berliner f&uuml;r den Bau von <em>AquaMegaWorld</em> Extra-Steuern zahlen?",
+            "Wenn <em>AquaMegaWorld</em> kein Geld mehr hat: sollen alle Berliner dann die Schulden zahlen?",
+            "In <em>AquaMegaWorld</em> werden Handys keinen Empfang haben.<br>Ihr k&ouml;nnt f&uuml;r 1&nbsp;&euro; pro Stunde das WLAN von dort nutzen.<br>Ok f&uuml;r euch?",
+            "Wenn <em>AquaMegaWorld</em> schon fast voll ist und nur noch wenige Menschen rein passen:<br>Sollen dann nur noch Menschen hinein, die in Berlin wohnen?"
+        ];
+
+        var aktuelleFrageIndex = 0;
+
+        function showQuestion() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('question-screen').style.display = 'block';
+            document.getElementById('back-link').classList.remove('hidden');
+            aktuelleFrageIndex = 0;
+            updateQuestion();
+        }
+
+        function updateQuestion() {
+            document.getElementById('frage').innerHTML = fragen[aktuelleFrageIndex];
+            document.getElementById('next-btn').textContent =
+                aktuelleFrageIndex === fragen.length - 1 ? 'Abschlie\\u00dfen' : 'N\\u00e4chste Frage';
+        }
+
+        function nextQuestion() {
+            var qScreen = document.getElementById('question-screen');
+            if (aktuelleFrageIndex === fragen.length - 1) {
+                qScreen.style.display = 'none';
+                document.getElementById('back-link').classList.add('hidden');
+                document.getElementById('end-screen').style.display = 'block';
+                return;
+            }
+            qScreen.classList.remove('fade-in');
+            void qScreen.offsetWidth;
+            qScreen.classList.add('fade-in');
+            aktuelleFrageIndex++;
+            updateQuestion();
+        }
+
+        function previousQuestion() {
+            var qScreen = document.getElementById('question-screen');
+            if (aktuelleFrageIndex === 0) {
+                qScreen.style.display = 'none';
+                document.getElementById('back-link').classList.add('hidden');
+                document.getElementById('start-screen').style.display = 'block';
+            } else {
+                qScreen.classList.remove('fade-in');
+                void qScreen.offsetWidth;
+                qScreen.classList.add('fade-in');
+                aktuelleFrageIndex--;
+                updateQuestion();
+            }
+        }
+    </script>
+
+</body>
+</html>
+
+HTMLEOF
+
+cat > app/src/main/java/com/dg/quizimpl/MainActivity.java << 'EOF'
 package com.dg.quizimpl;
 
 import android.Manifest;
@@ -134,28 +381,19 @@ import android.os.Bundle;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
-
 import de.markusfisch.android.barcodescannerview.widget.BarcodeScannerView;
 
 public class MainActivity extends Activity {
-
-    // Wenn dieser QR-Code gescannt wird...
     private static final String TRIGGER_URL = "https://spielehrei.org/inq/";
-    // ...wird stattdessen diese lokale Datei geöffnet
-    private static final String LOCAL_URL = "file:///storage/emulated/0/Download/dg-quizimpl.html";
-
     private static final int REQUEST_CAMERA = 1;
     private BarcodeScannerView scannerView;
     private volatile boolean launched = false;
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-            String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == REQUEST_CAMERA) {
-            if (grantResults.length > 0 &&
-                    grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Kamera-Berechtigung erforderlich!",
-                        Toast.LENGTH_LONG).show();
+            if (grantResults.length > 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Kamera-Berechtigung erforderlich!", Toast.LENGTH_LONG).show();
                 finish();
             } else {
                 scannerView.openAsync();
@@ -169,24 +407,26 @@ public class MainActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
-
         scannerView = findViewById(R.id.scanner);
         scannerView.setCropRatio(.75f);
-
         scannerView.setOnBarcodeListener(result -> {
             if (!launched) {
                 launched = true;
                 final String scanned = result.getText().trim();
-                // URL umleiten: egal was gescannt wird, immer lokale Datei öffnen
-                final String urlToOpen = scanned.equals(TRIGGER_URL)
-                        ? LOCAL_URL
-                        : scanned; // andere QR-Codes werden normal geöffnet
-                runOnUiThread(() -> openUrl(urlToOpen));
+                final boolean isAsset = scanned.equals(TRIGGER_URL);
+                runOnUiThread(() -> {
+                    Intent intent = new Intent(MainActivity.this, WebViewActivity.class);
+                    intent.putExtra(WebViewActivity.EXTRA_IS_ASSET, isAsset);
+                    intent.putExtra(WebViewActivity.EXTRA_URL, scanned);
+                    startActivity(intent);
+                });
             }
             return false;
         });
-
-        checkPermissions();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA);
+        }
     }
 
     @Override
@@ -194,8 +434,7 @@ public class MainActivity extends Activity {
         super.onResume();
         launched = false;
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
-                checkSelfPermission(Manifest.permission.CAMERA)
-                == PackageManager.PERMISSION_GRANTED) {
+                checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             scannerView.openAsync();
         }
     }
@@ -205,139 +444,60 @@ public class MainActivity extends Activity {
         super.onPause();
         scannerView.close();
     }
-
-    private void openUrl(String url) {
-        Intent intent = new Intent(this, WebViewActivity.class);
-        intent.putExtra(WebViewActivity.EXTRA_URL, url);
-        startActivity(intent);
-    }
-
-    private void checkPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.CAMERA)
-                    != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(
-                        new String[]{Manifest.permission.CAMERA},
-                        REQUEST_CAMERA);
-            }
-        }
-    }
 }
 EOF
 
-cat > app/src/main/java/com/dg/scanner/WebViewActivity.java << 'EOF'
+cat > app/src/main/java/com/dg/quizimpl/WebViewActivity.java << 'EOF'
 package com.dg.quizimpl;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.webkit.WebResourceError;
-import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 public class WebViewActivity extends Activity {
-
     public static final String EXTRA_URL = "url";
-    private static final int REQUEST_STORAGE = 2;
+    public static final String EXTRA_IS_ASSET = "is_asset";
     private WebView webView;
-    private String pendingUrl;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Vollbild
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().getDecorView().setSystemUiVisibility(
-            View.SYSTEM_UI_FLAG_FULLSCREEN
-            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-        );
-
+            View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         setContentView(R.layout.activity_webview);
-
         webView = findViewById(R.id.web_view);
-
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
-        s.setAllowFileAccess(true);
-        s.setAllowFileAccessFromFileURLs(true);
-        s.setAllowUniversalAccessFromFileURLs(true);
         s.setDomStorageEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
+        webView.setWebViewClient(new WebViewClient());
 
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onReceivedError(WebView view, WebResourceRequest request,
-                    WebResourceError error) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    runOnUiThread(() ->
-                        new AlertDialog.Builder(WebViewActivity.this)
-                            .setTitle("Fehler beim Laden")
-                            .setMessage("Datei nicht gefunden:\n" + pendingUrl
-                                + "\n\nFehler: " + error.getDescription())
-                            .setPositiveButton("OK", (d, w) -> finish())
-                            .show()
-                    );
-                }
-            }
-        });
+        boolean isAsset = getIntent().getBooleanExtra(EXTRA_IS_ASSET, false);
+        String url = getIntent().getStringExtra(EXTRA_URL);
 
-        pendingUrl = getIntent().getStringExtra(EXTRA_URL);
-
-        if (pendingUrl == null || pendingUrl.isEmpty()) {
-            showError("Keine URL empfangen.");
-            return;
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
-                checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(
-                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                    REQUEST_STORAGE);
+        if (isAsset) {
+            webView.loadUrl("file:///android_asset/dg-quizimpl.html");
+        } else if (url != null && !url.isEmpty()) {
+            webView.loadUrl(url);
         } else {
-            loadUrl();
+            finish();
         }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-            String[] permissions, int[] grantResults) {
-        loadUrl();
-    }
-
-    private void loadUrl() {
-        webView.loadUrl(pendingUrl);
-    }
-
-    private void showError(String msg) {
-        new AlertDialog.Builder(this)
-            .setTitle("Fehler")
-            .setMessage(msg)
-            .setPositiveButton("OK", (d, w) -> finish())
-            .show();
     }
 
     @Override
     public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
+        if (webView != null && webView.canGoBack()) webView.goBack();
+        else super.onBackPressed();
     }
 }
 EOF
@@ -345,46 +505,30 @@ EOF
 cat > app/src/main/res/layout/activity_main.xml << 'EOF'
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_width="match_parent" android:layout_height="match_parent"
     android:background="#000000">
-
     <de.markusfisch.android.barcodescannerview.widget.BarcodeScannerView
         android:id="@+id/scanner"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="40dp"
-        android:text="QR-Code in den Rahmen halten"
-        android:textColor="#ffffff"
-        android:textSize="16sp"
-        android:background="#88000000"
-        android:padding="12dp" />
-
+        android:layout_width="match_parent" android:layout_height="match_parent" />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="40dp"
+        android:text="QR-Code in den Rahmen halten" android:textColor="#ffffff"
+        android:textSize="16sp" android:background="#88000000" android:padding="12dp" />
 </FrameLayout>
 EOF
 
 cat > app/src/main/res/layout/activity_webview.xml << 'EOF'
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <WebView
-        android:id="@+id/web_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+    android:layout_width="match_parent" android:layout_height="match_parent">
+    <WebView android:id="@+id/web_view"
+        android:layout_width="match_parent" android:layout_height="match_parent" />
 </FrameLayout>
 EOF
 
 cat > app/src/main/res/values/strings.xml << 'EOF'
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">DG Quizimpl Scanner</string>
-</resources>
+<resources><string name="app_name">DG Quizimpl Scanner</string></resources>
 EOF
 
 cat > app/src/main/res/values/themes.xml << 'EOF'
@@ -396,9 +540,7 @@ EOF
 
 cat > app/src/main/res/values/colors.xml << 'EOF'
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <color name="ic_launcher_background">#1a1a2e</color>
-</resources>
+<resources><color name="ic_launcher_background">#0a3d3d</color></resources>
 EOF
 
 cat > app/src/main/res/drawable/ic_launcher_foreground.xml << 'EOF'
@@ -406,7 +548,7 @@ cat > app/src/main/res/drawable/ic_launcher_foreground.xml << 'EOF'
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:fillColor="#f5a623"
+    <path android:fillColor="#e67e22"
         android:pathData="M3,3h7v7H3V3zM4.5,4.5v4h4v-4H4.5zM14,3h7v7h-7V3zM15.5,4.5v4h4v-4H15.5zM3,14h7v7H3V14zM4.5,15.5v4h4v-4H4.5zM14,14h2v2h-2v-2zM18,14h3v3h-3v-3zM16,18h2v3h-2v-3zM19,18h2v2h-2v-2zM6,6h2v2H6V6zM17,6h2v2h-2V6zM6,17h2v2H6V17z"/>
 </vector>
 EOF
@@ -419,4 +561,4 @@ LAUNCHER_XML='<?xml version="1.0" encoding="utf-8"?>
 echo "$LAUNCHER_XML" > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
 echo "$LAUNCHER_XML" > app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
 
-echo "=== Fertig ==="
+echo "=== Fertig: DG Quizimpl Scanner ==="
