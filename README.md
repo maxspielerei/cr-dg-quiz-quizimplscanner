@@ -1,2 +1,2 @@
 Finale Lösung via Claude: 
-dg + dgsimpl scanner AIO!
+cr + dg + dgsimpl scanner AIO!
