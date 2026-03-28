@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-echo "=== Erstelle DG Scanner ==="
+echo "=== Erstelle DG Scanner (kombiniert) ==="
 
 mkdir -p app/src/main/assets
 mkdir -p app/src/main/java/com/dg/scanner
@@ -115,7 +115,6 @@ cat > app/src/main/AndroidManifest.xml << 'EOF'
 </manifest>
 EOF
 
-# Beide HTML-Dateien als Assets einbetten
 cat > app/src/main/assets/dg-quiz.html << 'HTMLEOF1'
 <!DOCTYPE html>
 <html lang="de">
@@ -624,6 +623,193 @@ cat > app/src/main/assets/dg-quizimpl.html << 'HTMLEOF2'
 
 HTMLEOF2
 
+cat > app/src/main/assets/cr-quiz.html << 'HTMLEOF3'
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quizto</title>
+    <style>
+        @keyframes bgShift {
+            0%   { background-color: #0a3d3d; }
+            50%  { background-color: #0d6060; }
+            100% { background-color: #0a3d3d; }
+        }
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #0a3d3d;
+            animation: bgShift 3s ease-in-out infinite;
+        }
+        .card {
+            text-align: center;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            width: 85%;
+            max-width: 400px;
+        }
+        button {
+            padding: 20px 40px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #e67e22;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            width: 100%;
+        }
+        button:active {
+            transform: scale(0.98);
+            background-color: #d35400;
+        }
+        .hidden { display: none; }
+        
+        /* Animation für den "Nächste Frage" Effekt */
+        .fade-in {
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        h2 { color: #2c3e50; line-height: 1.4; }
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .back-link:hover {
+            color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+    <a href="#" id="back-link" class="back-link hidden" onclick="previousQuestion(); return false;">← zurück</a>
+    
+    <div class="card">
+        <div id="start-screen">
+            <h2>Um den Apparat zu bedienen, braucht ihr zuerst die Lösungskugeln. <br><br>
+Habt ihr sie schon?<br><br>
+Beantwortet mit ihnen folgende Fragen und füttert die Maschine.</h2>
+            <br>
+            <button onclick="showQuestion()">Fragen</button>
+        </div>
+
+        <div id="question-screen" class="hidden">
+            <h2 id="frage">Wenn die Bundesregierung Klimamaßnahmen abschwächt, sollte Berlin dann eigene Maßnahmen gegen den Klimawandel umsetzen?</h2>
+            <br>
+            <button onclick="nextQuestion()">Nächste Frage</button>
+        </div>
+
+        <div id="end-screen" class="hidden">
+            <h1 style="color: #27ae60; font-size: 3rem; margin: 0;">🎉</h1>
+            <h2 style="color: #27ae60;">Geschafft!</h2>
+        </div>
+    </div>
+
+    <script>
+        // Fragenliste
+        const fragen = [
+            "Wenn die Bundesregierung Klimamaßnahmen abschwächt, sollte Berlin dann eigene Maßnahmen gegen den Klimawandel umsetzen?",
+            "Findet ihr ok, wenn die Politiker alleine über Maßnahmen zum Klimaschutz entscheiden, ohne die Bevölkerung zu fragen?",
+            "Soll es an Schulen einen \\"Veggie-Day\\" pro Woche geben, an dem nur vegetarisches Essen serviert wird – auch wenn du an diesem Tag lieber Chicken Nuggets essen würdest?",
+            "Sollen Online-Bestellungen (Amazon, Zalando etc.) nur noch einmal pro Woche gesammelt geliefert werden – auch wenn du dann länger auf dein Paket warten musst?",
+            "Sollen Fast-Fashion-Läden (z.B. Primark, Shein) in Berlin verboten werden – auch wenn du dir dann manche Kleidung nicht mehr leisten kannst?",
+            "Soll Berlin eine \\"Klima-Steuer\\" auf alle Produkte erheben, die aus über 1000 km Entfernung kommen – auch wenn dann dein Smartphone, deine Kleidung und viele Lebensmittel deutlich teurer werden?",
+            "Sollen große Events wie das Konzerte, Festivals und Bundesliga-Spiele nur noch mit Anreise per ÖPNV erlaubt sein – auch wenn man dann nicht mehr mit dem Auto hinfahren kann?",
+            "Soll die Berliner Innenstadt (innerhalb des S-Bahn-Rings) komplett autofrei werden – auch wenn dadurch manche Menschen längere Wege haben?",
+            "Sollen private Haushalte in Berlin an Hitzetagen nur noch morgens und abends ihre Gärten bewässern dürfen – auch wenn deine Pflanzen mittags vertrocknen könnten?"
+        ];
+        
+        let aktuelleFrageIndex = 0;
+
+        // Diese Funktionen laufen lokal im Browser ohne Internet
+        function showQuestion() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('question-screen').style.display = 'block';
+            updateQuestion();
+        }
+
+        function updateQuestion() {
+            document.getElementById('frage').textContent = fragen[aktuelleFrageIndex];
+            
+            // Zeige "zurück" Link immer im Fragen-Screen
+            const backLink = document.getElementById('back-link');
+            backLink.classList.remove('hidden');
+            
+            // Ändere Button-Text bei letzter Frage
+            const button = document.querySelector('#question-screen button');
+            if (aktuelleFrageIndex === fragen.length - 1) {
+                button.textContent = 'Abschließen';
+            } else {
+                button.textContent = 'Nächste Frage';
+            }
+        }
+
+        function nextQuestion() {
+            const qScreen = document.getElementById('question-screen');
+            
+            // Prüfe, ob wir bei der letzten Frage sind
+            if (aktuelleFrageIndex === fragen.length - 1) {
+                // Zeige End-Screen
+                qScreen.style.display = 'none';
+                document.getElementById('end-screen').style.display = 'block';
+                return;
+            }
+            
+            // Animation kurz entfernen und neu hinzufügen für visuellen Klick-Effekt
+            qScreen.classList.remove('fade-in');
+            void qScreen.offsetWidth; // Trick, um Animation neu zu triggern
+            qScreen.classList.add('fade-in');
+            
+            // Zur nächsten Frage wechseln
+            aktuelleFrageIndex++;
+            updateQuestion();
+        }
+        
+        function previousQuestion() {
+            const qScreen = document.getElementById('question-screen');
+            
+            if (aktuelleFrageIndex === 0) {
+                // Zurück zum Startbildschirm
+                qScreen.style.display = 'none';
+                document.getElementById('back-link').classList.add('hidden');
+                document.getElementById('start-screen').style.display = 'block';
+            } else {
+                // Animation
+                qScreen.classList.remove('fade-in');
+                void qScreen.offsetWidth;
+                qScreen.classList.add('fade-in');
+                
+                // Zur vorherigen Frage wechseln
+                aktuelleFrageIndex--;
+                updateQuestion();
+            }
+        }
+    </script>
+
+</body>
+</html>
+HTMLEOF3
+
 cat > app/src/main/java/com/dg/scanner/MainActivity.java << 'EOF'
 package com.dg.scanner;
 
@@ -639,8 +825,9 @@ import android.widget.Toast;
 import de.markusfisch.android.barcodescannerview.widget.BarcodeScannerView;
 
 public class MainActivity extends Activity {
-    private static final String TRIGGER_QUIZ     = "https://spielehrei.org/q-intro/";
-    private static final String TRIGGER_QUIZIMPL = "https://spielehrei.org/inq/";
+    private static final String TRIGGER_DG_QUIZ     = "https://spielehrei.org/q-intro/";
+    private static final String TRIGGER_DG_QUIZIMPL = "https://spielehrei.org/inq/";
+    private static final String TRIGGER_CR_QUIZ     = "file:///storage/emulated/0/Download/quiz.html";
     private static final int REQUEST_CAMERA = 1;
     private BarcodeScannerView scannerView;
     private volatile boolean launched = false;
@@ -670,10 +857,12 @@ public class MainActivity extends Activity {
                 launched = true;
                 final String scanned = result.getText().trim();
                 final String assetFile;
-                if (scanned.equals(TRIGGER_QUIZ)) {
+                if (scanned.equals(TRIGGER_DG_QUIZ)) {
                     assetFile = "dg-quiz.html";
-                } else if (scanned.equals(TRIGGER_QUIZIMPL)) {
+                } else if (scanned.equals(TRIGGER_DG_QUIZIMPL)) {
                     assetFile = "dg-quizimpl.html";
+                } else if (scanned.equals(TRIGGER_CR_QUIZ)) {
+                    assetFile = "cr-quiz.html";
                 } else {
                     assetFile = null;
                 }
@@ -741,22 +930,36 @@ public class WebViewActivity extends Activity {
             View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         setContentView(R.layout.activity_webview);
+
         webView = findViewById(R.id.web_view);
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
+        // domStorage sichert sessionStorage - verhindert Passwort-Reset bei App-Unterbrechung
         s.setMediaPlaybackRequiresUserGesture(false);
         webView.setWebViewClient(new WebViewClient());
 
         String asset = getIntent().getStringExtra(EXTRA_ASSET);
         String url   = getIntent().getStringExtra(EXTRA_URL);
 
-        if (asset != null) {
+        if (savedInstanceState != null) {
+            // WebView-State nach Unterbrechung wiederherstellen
+            webView.restoreState(savedInstanceState);
+        } else if (asset != null) {
             webView.loadUrl("file:///android_asset/" + asset);
         } else if (url != null && !url.isEmpty()) {
             webView.loadUrl(url);
         } else {
             finish();
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        // WebView-State sichern (aktuelle Seite, Scroll-Position, JS-State via domStorage)
+        if (webView != null) {
+            webView.saveState(outState);
         }
     }
 
