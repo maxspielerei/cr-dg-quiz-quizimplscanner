@@ -682,7 +682,7 @@ cat > app/src/main/assets/cr-quiz.html << 'HTMLEOF3'
         }
         h2 { color: #2c3e50; line-height: 1.4; }
         .back-link {
-            position: absolute;
+            position: fixed;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
@@ -727,7 +727,7 @@ Beantwortet mit ihnen folgende Fragen und füttert die Maschine.</h2>
 
     <script>
         // Fragenliste
-        const fragen = [
+        var fragen = [
             "Wenn die Bundesregierung Klimamaßnahmen abschwächt, sollte Berlin dann eigene Maßnahmen gegen den Klimawandel umsetzen?",
             "Findet ihr ok, wenn die Politiker alleine über Maßnahmen zum Klimaschutz entscheiden, ohne die Bevölkerung zu fragen?",
             "Soll es an Schulen einen \\"Veggie-Day\\" pro Woche geben, an dem nur vegetarisches Essen serviert wird – auch wenn du an diesem Tag lieber Chicken Nuggets essen würdest?",
@@ -739,7 +739,7 @@ Beantwortet mit ihnen folgende Fragen und füttert die Maschine.</h2>
             "Sollen private Haushalte in Berlin an Hitzetagen nur noch morgens und abends ihre Gärten bewässern dürfen – auch wenn deine Pflanzen mittags vertrocknen könnten?"
         ];
         
-        let aktuelleFrageIndex = 0;
+        var aktuelleFrageIndex = 0;
 
         // Diese Funktionen laufen lokal im Browser ohne Internet
         function showQuestion() {
@@ -752,11 +752,11 @@ Beantwortet mit ihnen folgende Fragen und füttert die Maschine.</h2>
             document.getElementById('frage').textContent = fragen[aktuelleFrageIndex];
             
             // Zeige "zurück" Link immer im Fragen-Screen
-            const backLink = document.getElementById('back-link');
+            var backLink = document.getElementById('back-link');
             backLink.classList.remove('hidden');
             
             // Ändere Button-Text bei letzter Frage
-            const button = document.querySelector('#question-screen button');
+            var button = document.querySelector('#question-screen button');
             if (aktuelleFrageIndex === fragen.length - 1) {
                 button.textContent = 'Abschließen';
             } else {
@@ -765,7 +765,7 @@ Beantwortet mit ihnen folgende Fragen und füttert die Maschine.</h2>
         }
 
         function nextQuestion() {
-            const qScreen = document.getElementById('question-screen');
+            var qScreen = document.getElementById('question-screen');
             
             // Prüfe, ob wir bei der letzten Frage sind
             if (aktuelleFrageIndex === fragen.length - 1) {
@@ -786,7 +786,7 @@ Beantwortet mit ihnen folgende Fragen und füttert die Maschine.</h2>
         }
         
         function previousQuestion() {
-            const qScreen = document.getElementById('question-screen');
+            var qScreen = document.getElementById('question-screen');
             
             if (aktuelleFrageIndex === 0) {
                 // Zurück zum Startbildschirm
