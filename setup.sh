@@ -641,7 +641,7 @@ cat > app/src/main/assets/cr-quiz.html << 'HTMLEOF3'
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             background-color: #0a3d3d;
             animation: bgShift 3s ease-in-out infinite;
@@ -653,7 +653,7 @@ cat > app/src/main/assets/cr-quiz.html << 'HTMLEOF3'
             border-radius: 20px;
             box-shadow: 0 10px 20px rgba(0,0,0,0.3);
             width: 85%;
-            max-width: 400px;
+            max-width: 450px;
         }
         button {
             padding: 20px 40px;
@@ -671,135 +671,100 @@ cat > app/src/main/assets/cr-quiz.html << 'HTMLEOF3'
             background-color: #d35400;
         }
         .hidden { display: none; }
-        
-        /* Animation für den "Nächste Frage" Effekt */
-        .fade-in {
-            animation: fadeIn 0.3s;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        h2 { color: #2c3e50; line-height: 1.4; }
+        .fade-in { animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        h2 { color: #2c3e50; line-height: 1.5; }
         .back-link {
             position: fixed;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            color: rgba(255, 255, 255, 0.5);
-            background-color: rgba(255, 255, 255, 0.1);
+            color: rgba(255,255,255,0.5);
+            background-color: rgba(255,255,255,0.1);
             padding: 8px 16px;
             border-radius: 8px;
             text-decoration: none;
             font-size: 0.85rem;
             transition: all 0.2s;
-        }
-        .back-link:hover {
-            color: rgba(255, 255, 255, 0.8);
-            background-color: rgba(255, 255, 255, 0.15);
+            white-space: nowrap;
         }
     </style>
 </head>
 <body>
 
-    <a href="#" id="back-link" class="back-link hidden" onclick="previousQuestion(); return false;">← zurück</a>
-    
+    <a href="#" id="back-link" class="back-link hidden" onclick="previousQuestion(); return false;">&#8592; zur&uuml;ck</a>
+
     <div class="card">
+
         <div id="start-screen">
-            <h2>Um den Apparat zu bedienen, braucht ihr zuerst die Lösungskugeln. <br><br>
+            <h2>Um den Apparat zu bedienen, braucht ihr zuerst die L&ouml;sungskugeln.<br><br>
 Habt ihr sie schon?<br><br>
-Beantwortet mit ihnen folgende Fragen und füttert die Maschine.</h2>
+Beantwortet mit ihnen folgende Fragen und f&uuml;ttert die Maschine.</h2>
             <br>
             <button onclick="showQuestion()">Fragen</button>
         </div>
 
         <div id="question-screen" class="hidden">
-            <h2 id="frage">Wenn die Bundesregierung Klimamaßnahmen abschwächt, sollte Berlin dann eigene Maßnahmen gegen den Klimawandel umsetzen?</h2>
+            <h2 id="frage"></h2>
             <br>
-            <button onclick="nextQuestion()">Nächste Frage</button>
+            <button id="next-btn" onclick="nextQuestion()">N&auml;chste Frage</button>
         </div>
 
         <div id="end-screen" class="hidden">
-            <h1 style="color: #27ae60; font-size: 3rem; margin: 0;">🎉</h1>
-            <h2 style="color: #27ae60;">Geschafft!</h2>
+            <h1 style="color:#27ae60; font-size:3rem; margin:0;">&#127881;</h1>
+            <h2 style="color:#27ae60;">Geschafft!</h2>
         </div>
+
     </div>
 
-    <script>
-        // Fragenliste
+    <script type="text/javascript">
         var fragen = [
             "Wenn die Bundesregierung Klimamaßnahmen abschwächt, sollte Berlin dann eigene Maßnahmen gegen den Klimawandel umsetzen?",
             "Findet ihr ok, wenn die Politiker alleine über Maßnahmen zum Klimaschutz entscheiden, ohne die Bevölkerung zu fragen?",
-            "Soll es an Schulen einen \\"Veggie-Day\\" pro Woche geben, an dem nur vegetarisches Essen serviert wird – auch wenn du an diesem Tag lieber Chicken Nuggets essen würdest?",
-            "Sollen Online-Bestellungen (Amazon, Zalando etc.) nur noch einmal pro Woche gesammelt geliefert werden – auch wenn du dann länger auf dein Paket warten musst?",
-            "Sollen Fast-Fashion-Läden (z.B. Primark, Shein) in Berlin verboten werden – auch wenn du dir dann manche Kleidung nicht mehr leisten kannst?",
-            "Soll Berlin eine \\"Klima-Steuer\\" auf alle Produkte erheben, die aus über 1000 km Entfernung kommen – auch wenn dann dein Smartphone, deine Kleidung und viele Lebensmittel deutlich teurer werden?",
-            "Sollen große Events wie das Konzerte, Festivals und Bundesliga-Spiele nur noch mit Anreise per ÖPNV erlaubt sein – auch wenn man dann nicht mehr mit dem Auto hinfahren kann?",
-            "Soll die Berliner Innenstadt (innerhalb des S-Bahn-Rings) komplett autofrei werden – auch wenn dadurch manche Menschen längere Wege haben?",
-            "Sollen private Haushalte in Berlin an Hitzetagen nur noch morgens und abends ihre Gärten bewässern dürfen – auch wenn deine Pflanzen mittags vertrocknen könnten?"
+            "Soll es an Schulen einen Veggie-Day pro Woche geben, an dem nur vegetarisches Essen serviert wird - auch wenn du an diesem Tag lieber Chicken Nuggets essen würdest?",
+            "Sollen Online-Bestellungen nur noch einmal pro Woche gesammelt geliefert werden - auch wenn du dann länger auf dein Paket warten musst?",
+            "Sollen Fast-Fashion-Läden in Berlin verboten werden - auch wenn du dir dann manche Kleidung nicht mehr leisten kannst?",
+            "Soll Berlin eine Klima-Steuer auf alle Produkte erheben, die aus über 1000 km Entfernung kommen - auch wenn dann dein Smartphone und viele Lebensmittel deutlich teurer werden?",
+            "Sollen große Events wie Konzerte und Festivals nur noch mit Anreise per ÖPNV erlaubt sein - auch wenn man dann nicht mehr mit dem Auto hinfahren kann?",
+            "Soll die Berliner Innenstadt komplett autofrei werden - auch wenn dadurch manche Menschen längere Wege haben?",
+            "Sollen private Haushalte in Berlin an Hitzetagen nur noch morgens und abends ihre Gärten bewässern dürfen - auch wenn deine Pflanzen mittags vertrocknen könnten?"
         ];
-        
+
         var aktuelleFrageIndex = 0;
 
-        // Diese Funktionen laufen lokal im Browser ohne Internet
         function showQuestion() {
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('question-screen').style.display = 'block';
+            document.getElementById("start-screen").style.display = "none";
+            document.getElementById("question-screen").style.display = "block";
+            document.getElementById("back-link").className = "back-link";
+            aktuelleFrageIndex = 0;
             updateQuestion();
         }
 
         function updateQuestion() {
-            document.getElementById('frage').textContent = fragen[aktuelleFrageIndex];
-            
-            // Zeige "zurück" Link immer im Fragen-Screen
-            var backLink = document.getElementById('back-link');
-            backLink.classList.remove('hidden');
-            
-            // Ändere Button-Text bei letzter Frage
-            var button = document.querySelector('#question-screen button');
-            if (aktuelleFrageIndex === fragen.length - 1) {
-                button.textContent = 'Abschließen';
-            } else {
-                button.textContent = 'Nächste Frage';
-            }
+            document.getElementById("frage").innerHTML = fragen[aktuelleFrageIndex];
+            document.getElementById("next-btn").innerHTML =
+                aktuelleFrageIndex === fragen.length - 1 ? "Abschließen" : "Nächste Frage";
         }
 
         function nextQuestion() {
-            var qScreen = document.getElementById('question-screen');
-            
-            // Prüfe, ob wir bei der letzten Frage sind
+            var qScreen = document.getElementById("question-screen");
             if (aktuelleFrageIndex === fragen.length - 1) {
-                // Zeige End-Screen
-                qScreen.style.display = 'none';
-                document.getElementById('end-screen').style.display = 'block';
+                qScreen.style.display = "none";
+                document.getElementById("back-link").className = "back-link hidden";
+                document.getElementById("end-screen").style.display = "block";
                 return;
             }
-            
-            // Animation kurz entfernen und neu hinzufügen für visuellen Klick-Effekt
-            qScreen.classList.remove('fade-in');
-            void qScreen.offsetWidth; // Trick, um Animation neu zu triggern
-            qScreen.classList.add('fade-in');
-            
-            // Zur nächsten Frage wechseln
             aktuelleFrageIndex++;
             updateQuestion();
         }
-        
+
         function previousQuestion() {
-            var qScreen = document.getElementById('question-screen');
-            
+            var qScreen = document.getElementById("question-screen");
             if (aktuelleFrageIndex === 0) {
-                // Zurück zum Startbildschirm
-                qScreen.style.display = 'none';
-                document.getElementById('back-link').classList.add('hidden');
-                document.getElementById('start-screen').style.display = 'block';
+                qScreen.style.display = "none";
+                document.getElementById("back-link").className = "back-link hidden";
+                document.getElementById("start-screen").style.display = "block";
             } else {
-                // Animation
-                qScreen.classList.remove('fade-in');
-                void qScreen.offsetWidth;
-                qScreen.classList.add('fade-in');
-                
-                // Zur vorherigen Frage wechseln
                 aktuelleFrageIndex--;
                 updateQuestion();
             }
