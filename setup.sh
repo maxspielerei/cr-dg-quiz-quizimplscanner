@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-echo "=== Erstelle DG Scanner (kombiniert) ==="
+echo "=== Erstelle DG Scanner ==="
 
 mkdir -p app/src/main/assets
 mkdir -p app/src/main/java/com/dg/scanner
@@ -86,7 +86,6 @@ EOF
 cat > app/src/main/AndroidManifest.xml << 'EOF'
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     package="com.dg.scanner">
 
     <uses-permission android:name="android.permission.CAMERA" />
@@ -330,7 +329,7 @@ cat > app/src/main/assets/dg-quiz.html << 'HTMLEOF1'
         function updateQuestion() {
             document.getElementById('frage').innerHTML = fragen[aktuelleFrageIndex];
             document.getElementById('next-btn').textContent =
-                aktuelleFrageIndex === fragen.length - 1 ? 'Abschlie\\u00dfen' : 'N\\u00e4chste Frage';
+                aktuelleFrageIndex === fragen.length - 1 ? 'Abschließen' : 'Nächste Frage';
         }
 
         function nextQuestion() {
@@ -584,7 +583,7 @@ cat > app/src/main/assets/dg-quizimpl.html << 'HTMLEOF2'
         function updateQuestion() {
             document.getElementById('frage').innerHTML = fragen[aktuelleFrageIndex];
             document.getElementById('next-btn').textContent =
-                aktuelleFrageIndex === fragen.length - 1 ? 'Abschlie\\u00dfen' : 'N\\u00e4chste Frage';
+                aktuelleFrageIndex === fragen.length - 1 ? 'Abschließen' : 'Nächste Frage';
         }
 
         function nextQuestion() {
@@ -895,12 +894,10 @@ public class WebViewActivity extends Activity {
             View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         setContentView(R.layout.activity_webview);
-
         webView = findViewById(R.id.web_view);
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
-        // domStorage sichert sessionStorage - verhindert Passwort-Reset bei App-Unterbrechung
         s.setMediaPlaybackRequiresUserGesture(false);
         webView.setWebViewClient(new WebViewClient());
 
@@ -908,7 +905,6 @@ public class WebViewActivity extends Activity {
         String url   = getIntent().getStringExtra(EXTRA_URL);
 
         if (savedInstanceState != null) {
-            // WebView-State nach Unterbrechung wiederherstellen
             webView.restoreState(savedInstanceState);
         } else if (asset != null) {
             webView.loadUrl("file:///android_asset/" + asset);
@@ -922,7 +918,6 @@ public class WebViewActivity extends Activity {
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        // WebView-State sichern (aktuelle Seite, Scroll-Position, JS-State via domStorage)
         if (webView != null) {
             webView.saveState(outState);
         }
