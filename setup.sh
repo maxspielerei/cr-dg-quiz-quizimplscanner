@@ -718,15 +718,15 @@ Beantwortet mit ihnen folgende Fragen und f&uuml;ttert die Maschine.</h2>
 
     <script type="text/javascript">
         var fragen = [
-            "Wenn die Bundesregierung Klimamaßnahmen abschwächt, sollte Berlin dann eigene Maßnahmen gegen den Klimawandel umsetzen?",
-            "Findet ihr ok, wenn die Politiker alleine über Maßnahmen zum Klimaschutz entscheiden, ohne die Bevölkerung zu fragen?",
-            "Soll es an Schulen einen Veggie-Day pro Woche geben, an dem nur vegetarisches Essen serviert wird - auch wenn du an diesem Tag lieber Chicken Nuggets essen würdest?",
-            "Sollen Online-Bestellungen nur noch einmal pro Woche gesammelt geliefert werden - auch wenn du dann länger auf dein Paket warten musst?",
-            "Sollen Fast-Fashion-Läden in Berlin verboten werden - auch wenn du dir dann manche Kleidung nicht mehr leisten kannst?",
-            "Soll Berlin eine Klima-Steuer auf alle Produkte erheben, die aus über 1000 km Entfernung kommen - auch wenn dann dein Smartphone und viele Lebensmittel deutlich teurer werden?",
-            "Sollen große Events wie Konzerte und Festivals nur noch mit Anreise per ÖPNV erlaubt sein - auch wenn man dann nicht mehr mit dem Auto hinfahren kann?",
-            "Soll die Berliner Innenstadt komplett autofrei werden - auch wenn dadurch manche Menschen längere Wege haben?",
-            "Sollen private Haushalte in Berlin an Hitzetagen nur noch morgens und abends ihre Gärten bewässern dürfen - auch wenn deine Pflanzen mittags vertrocknen könnten?"
+            "Habt ihr das Gefühl, die Menschen kümmern sich ausreichend um unsere Umwelt?",
+            "Glaubt ihr, dass der Klimawandel eure Zukunft beeinflussen wird?",
+            "Berlin soll 2045 keine Klimaschäden mehr verursachen, haben die Politiker versprochen. Vertraut ihr ihnen, dass sie das für euch machen?",
+            "Findet ihr ok, wenn die Politiker alleine über Klimaschutz entscheiden, ohne die Berliner zu fragen?",
+            "Sollen Berliner an Hitzetagen nur noch morgens und abends ihre Gärten bewässern dürfen - auch wenn ihre Pflanzen mittags vertrocknen könnten?",
+            "Fleisch ist für die Umwelt schädlicher als pflanzliche Lebensmittel. Soll es an eurer Schule einen Tag geben, an dem nur vegetarisches Essen serviert wird - auch wenn ihr an diesem Tag lieber Chicken Nuggets essen würdet?",
+            "Sollen Pakete nur noch einmal pro Woche zusammen geliefert werden - auch wenn du dann länger auf dein Paket warten musst?",
+            "Soll die Berliner Innenstadt komplett autofrei werden - auch wenn dadurch manche Menschen längere Wege haben?",
+            "Sollen Berliner etwas mehr für Produkte bezahlen, die weiter als 1000 km herkommen. Dinge aus der Nähe könnte man damit billiger machen.",
         ];
 
         var aktuelleFrageIndex = 0;
